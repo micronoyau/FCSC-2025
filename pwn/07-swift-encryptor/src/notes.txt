@@ -1,0 +1,56 @@
+---
+code execution
+---
+
+Messages of the form:
+| next_msg (8 bytes, dont care) | src (1 byte) (dontcare) | dst (1 byte) (dontcare) | Payload (0x10 bytes) |
+
+Goal: send message to joiner thread to cause buffer overflow.
+| offset (2 bytes) | memcpied data (0xd bytes) |
+
+How to send message to joiner thread (number 3):
+
+Send base64 encoded data:
+| (0x100-5)=0xfb blocks of 0x10 bytes | interface data (0x10) | decoder data (0x10) | splitter data (0x10) | joiner data (0x10) |
+
+ -> we need to bypass decoder and splitter
+
+1. decoder: s.t. enc_size is 0. -> just 0s
+
+2. splitter: s.t. data_size = 0 -> just 0s
+
+pb: joiner will exit only if joined_count == WORKERS_COUNT
+but WORKERS_COUNT == 0xff and it will get answers from only 0xfb workers + 1 fake worker -> lacking 2 messages
+-->> BUT we can send splitter message with data_size s.t.
+
+ - WORKERS_COUNT is updated to 1
+ - joiner thread is destroyed and up again
+
+with some luck, evil joiner message will arrive before legit message from encryptor
+
+--> One gadget at 
+0x583ec posix_spawn(rsp+0xc, "/bin/sh", 0, rbx, rsp+0x50, environ)
+constraints:
+  address rsp+0x68 is writable
+  rsp & 0xf == 0
+  rax == NULL || {"sh", rax, rip+0x17301e, r12, ...} is a valid argv
+  rbx == NULL || (u16)[rbx] == NULL
+
+----
+address leak (libc)
+----
+
+If WORKERS_COUNT becomes bigggg after joiner is created ===> total_size in joiner will be big and will copy joiner thread stack frame -> leak libc
+
+----
+address leak (splitter heap)
+----
+
+Send encoder big size
+
+| (0x100-5)=0xfb blocks of 0x10 bytes | interface data (0x10) | decoder data (0x10) | splitter data (0x10) | joiner data (0x10) | encoder data (0x10) |
+
+decoder, splitter: 0s
+joiner: 0s
+
+encoder: | big size (2 bytes) | osef (0xd bytes) |

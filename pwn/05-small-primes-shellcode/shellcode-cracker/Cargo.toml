@@ -1,0 +1,10 @@
+[package]
+name = "shellcode-cracker"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+capstone = "0.13.0"
+clap = { version = "4.5.37", features = ["derive"] }
+colored = "3.0.0"
+rand = "0.9.1"

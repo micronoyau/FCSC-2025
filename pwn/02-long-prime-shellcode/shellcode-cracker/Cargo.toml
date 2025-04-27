@@ -1,0 +1,8 @@
+[package]
+name = "shellcode-cracker"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+mbedtls = { version = "0.13.0", features = ["rdrand"] }
+rand = "0.9.1"
